@@ -7,7 +7,7 @@ import requests
 with open('APILayer_API_Key.env', 'r') as file:
     api_key = file.read()
 headers = {"apikey": api_key}
-printrange(5)
+
 def fetch_currencies_list():
     """
     Fetches the list of currencies from the API.
@@ -130,7 +130,7 @@ def get_amount():
     """
     try:
         amount = float(amount_entry.get())
-        if amount < 0:
+        if amount <= 0:
             messagebox.showerror("Error", "Amount cannot be negative. Please enter a non-negative number.")
             return None
         return amount
@@ -148,8 +148,9 @@ def get_date():
     date_str = date_entry.get()
     try:
         parsed_date = datetime.strptime(date_str, "%Y-%m-%d")
+        
         if parsed_date <= datetime.now():           # Check if parsed date is not after today
-            return date_str
+            return parsed_date.strftime("%Y-%m-%d") # return in the form YYYY-mm-dd
         else:
             messagebox.showerror("Error", "Date cannot be in the future.")
             return None
@@ -197,6 +198,8 @@ def append_expense(amount, currency, category, payment_method, date):
     
     display_data(data_values)
 
+    canvas.config(scrollregion=canvas.bbox("all"))
+
     total_amount += currency_converter(amount, currency)
     total_amount_value_label.config(text="{:.2f}".format(total_amount))
 
@@ -224,9 +227,10 @@ def change_previous_data_bg(frame, new_bg_color):
         if isinstance(child, Label):
             child.config(bg=new_bg_color)
 
-######################################################
-# Code for initializing and displaying GUI widgets...
-currency_menu = fetch_currencies_list()
+############### Initializing GUI ##############
+
+# currency_menu = fetch_currencies_list()
+currency_menu = ['USD', 'AED', 'AFN', 'ALL', 'AMD', 'ANG', 'AOA', 'ARS', 'AUD', 'AWG', 'AZN', 'BAM', 'BBD', 'BDT', 'BGN', 'BHD', 'BIF', 'BMD', 'BND', 'BOB', 'BRL', 'BSD', 'BTC', 'BTN', 'BWP', 'BYN', 'BYR', 'BZD', 'CAD', 'CDF', 'CHF', 'CLF', 'CLP', 'CNY', 'COP', 'CRC', 'CUC', 'CUP', 'CVE', 'CZK', 'DJF', 'DKK', 'DOP', 'DZD', 'EGP', 'ERN', 'ETB', 'EUR', 'FJD', 'FKP', 'GBP', 'GEL', 'GGP', 'GHS', 'GIP', 'GMD', 'GNF', 'GTQ', 'GYD', 'HKD', 'HNL', 'HRK', 'HTG', 'HUF', 'IDR', 'ILS', 'IMP', 'INR', 'IQD', 'IRR', 'ISK', 'JEP', 'JMD', 'JOD', 'JPY', 'KES', 'KGS', 'KHR', 'KMF', 'KPW', 'KRW', 'KWD', 'KYD', 'KZT', 'LAK', 'LBP', 'LKR', 'LRD', 'LSL', 'LTL', 'LVL', 'LYD', 'MAD', 'MDL', 'MGA', 'MKD', 'MMK', 'MNT', 'MOP', 'MRU', 'MUR', 'MVR', 'MWK', 'MXN', 'MYR', 'MZN', 'NAD', 'NGN', 'NIO', 'NOK', 'NPR', 'NZD', 'OMR', 'PAB', 'PEN', 'PGK', 'PHP', 'PKR', 'PLN', 'PYG', 'QAR', 'RON', 'RSD', 'RUB', 'RWF', 'SAR', 'SBD', 'SCR', 'SDG', 'SEK', 'SGD', 'SHP', 'SLE', 'SLL', 'SOS', 'SRD', 'STD', 'SVC', 'SYP', 'SZL', 'THB', 'TJS', 'TMT', 'TND', 'TOP', 'TRY', 'TTD', 'TWD', 'TZS', 'UAH', 'UGX', 'UYU', 'UZS', 'VEF', 'VES', 'VND', 'VUV', 'WST', 'XAF', 'XAG', 'XAU', 'XCD', 'XDR', 'XOF', 'XPF', 'YER', 'ZAR', 'ZMK', 'ZMW', 'ZWL']
 category_menu = ["Life Expenses", "Electricity", "Gas", "Rental", "Grocery", "Savings", "Education", "Charity"]
 payment_menu = ["Cash", "Credit Card", "Paypal"]
 menus = [currency_menu, category_menu, payment_menu]
@@ -256,7 +260,7 @@ padx_label = (5, 100)
 padx_entry = (100, 5) 
 
 # disaply entries frame layout
-entries_frame.grid(row=0, column=0)
+entries_frame.pack()
 for i, (entry_label, widget_entry) in enumerate(zip(entry_labels, entry_widgets), start=0):
     display_widgets(entry_label, i, 0, padx=padx_label, pady=5)
     display_widgets(widget_entry, i, 1, padx=padx_entry, pady=5)
@@ -266,12 +270,22 @@ display_widgets(add_expense_button, len(entry_labels), 1, padx=padx_entry, pady=
 headers_frame = Frame(window)
 header_labels = [create_label(headers_frame, name, relief=GROOVE) for name in label_names]
 
-headers_frame.grid(row=1, column=0)
+headers_frame.pack()
 for i, header_label in enumerate(header_labels):
     display_widgets(header_label, 0, i)
 
 ################ Data frame ################
-data_frame = Frame(window, background="white", width=730, height=200)
+data_outer_frame = Frame(window)
+canvas = Canvas(data_outer_frame, background="white", width=730, height=190)
+canvas.pack(side=LEFT, fill=Y, expand=True)
+scrollbar = Scrollbar(data_outer_frame, orient=VERTICAL, command=canvas.yview)
+scrollbar.pack(side=RIGHT, fill=Y)
+canvas.configure(yscrollcommand=scrollbar.set)
+
+data_frame = Frame(canvas, background="white")
+canvas.create_window((0, 0), window=data_frame, anchor='nw')
+
+# data_frame = Frame(window, background="white", width=730, height=200)
 
 amount_data = []
 currency_data = []
@@ -279,20 +293,19 @@ category_data = []
 payment_method_data = []
 date_data = []
 
-data_frame.grid(row=2, column=0)
+data_outer_frame.pack(fill=BOTH, expand=True)
+# data_frame.grid(row=2, column=0)
 
 ################ Total Amount Frame ################
 total_amount_frame = Frame(window)
 
 total_amount = 0
-for string_var in amount_data:
-    total_amount += string_var.get()
 
 total_amount_label = create_label(total_amount_frame, "Total Amount: ")
 total_amount_value_label = create_label(total_amount_frame, total_amount)
 currency_unit_label = create_label(total_amount_frame, " USD")
 
-total_amount_frame.grid(row=3, column=0)
+total_amount_frame.pack(side=BOTTOM)
 display_widgets(total_amount_label, 0, 0, pady=5, width=0, sticky='w', bg=None)
 display_widgets(total_amount_value_label, 0, 1, pady=5, width=0, sticky='w', bg=None)
 display_widgets(currency_unit_label, 0, 2, pady=5, width=0, sticky='w', bg=None)
